@@ -7,7 +7,7 @@ st.title("🧪 Motility Inference Test (No UI)")
 
 VIDEO_PATH = "data/video5_prep.mp4"
 TRACKS_CSV = "data/final_tracks.csv"
-MODEL_PATH = "models/model_motility.h5"
+MODEL_PATH = "model_motility.h5"
 
 if st.button("Run Motility Inference"):
     with st.spinner("Running pipeline..."):
