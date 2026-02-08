@@ -109,10 +109,7 @@ with tab2:
             # -----------------------------
             # MORPHOLOGY INFERENCE
             # -----------------------------
-            morphology = run_morphology_inference(
-                tracks_csv=TRACKS_CSV,
-                model_path=MORPH_MODEL
-            )
+            morphology = run_morphology_inference("data/morphology/binary_erotion")
 
             normal_pct = morphology["normal_pct"]
             abnormal_pct = morphology["abnormal_pct"]
