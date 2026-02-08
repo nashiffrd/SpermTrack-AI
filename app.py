@@ -1,158 +1,171 @@
+import os
+import cv2
 import streamlit as st
 import pandas as pd
-import os
 
-# =============================
-# IMPORT PIPELINE
-# =============================
+from tracking.run_tracking import run_tracking_pipeline
 from motility_inference.pipeline import run_motility_inference
 from morphology_inference.pipeline import run_morphology_inference
-from visualization.draw_trajectory_video import draw_trajectory_video
+from utils.draw_trajectory_video import draw_trajectory_video
 
-# =============================
-# PAGE CONFIG
-# =============================
+# =====================
+# BASIC SETUP
+# =====================
 st.set_page_config(
     page_title="Sperm Analysis System",
     layout="wide"
 )
 
-st.title("🧬 Integrated Sperm Motility & Morphology Analysis")
+TEMP_DIR = "temp"
+MODEL_DIR = "models"
 
-# =============================
-# SIDEBAR CONFIG
-# =============================
-st.sidebar.header("📂 Data Configuration")
+os.makedirs(TEMP_DIR, exist_ok=True)
 
-VIDEO_PATH = st.sidebar.text_input(
-    "Video Path",
-    value="data/video.mp4"
+# =====================
+# SIDEBAR
+# =====================
+st.sidebar.title("🧬 Sperm Analysis System")
+st.sidebar.markdown("Upload video → Tracking → Motility & Morphology")
+
+uploaded_video = st.sidebar.file_uploader(
+    "Upload Video Sperma",
+    type=["mp4", "avi", "mov"]
 )
 
-TRACKS_CSV = st.sidebar.text_input(
-    "final_tracks.csv",
-    value="data/final_tracks.csv"
-)
+run_btn = st.sidebar.button("🚀 Jalankan Analisis")
 
-MOTILITY_MODEL = st.sidebar.text_input(
-    "Motility Model (.h5)",
-    value="models/motility_model.h5"
-)
-
-MORPH_MODEL = st.sidebar.text_input(
-    "Morphology Model (.h5)",
-    value="models/morphology_model.h5"
-)
-
-RUN_BTN = st.sidebar.button("🚀 Run Full Analysis")
-
-# =============================
+# =====================
 # TABS
-# =============================
+# =====================
 tab1, tab2 = st.tabs([
-    "📥 Data Loader & Preprocessing",
-    "📊 Final Classification Dashboard"
+    "📥 Preprocessing & Tracking",
+    "📊 Hasil Klasifikasi"
 ])
 
-# =========================================================
-# TAB 1 — DATA LOADER & PREPROCESSING
-# =========================================================
-with tab1:
-    st.header("📥 Data Loader & Preprocessing Summary")
+# =====================
+# MAIN LOGIC
+# =====================
+if uploaded_video and run_btn:
 
-    if os.path.exists(TRACKS_CSV):
-        df = pd.read_csv(TRACKS_CSV)
+    # ---------------------
+    # SAVE VIDEO
+    # ---------------------
+    video_path = os.path.join(TEMP_DIR, uploaded_video.name)
+    with open(video_path, "wb") as f:
+        f.write(uploaded_video.read())
 
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Particle", df["particle"].nunique())
-        col2.metric("Total Frame", df["frame"].nunique())
-        col3.metric("Total Detection", len(df))
+    tracks_csv = os.path.join(TEMP_DIR, "final_tracks.csv")
+    trajectory_video = os.path.join(TEMP_DIR, "trajectory.mp4")
 
-        st.subheader("📋 Preview final_tracks.csv")
-        st.dataframe(df.head(20))
+    # =====================
+    # TAB 1 – TRACKING
+    # =====================
+    with tab1:
+        st.subheader("🔍 Tracking & Preprocessing")
 
-    else:
-        st.warning("⚠ final_tracks.csv tidak ditemukan")
-
-# =========================================================
-# TAB 2 — DASHBOARD BESAR (MOTILITY + MORPHOLOGY + TRAJECTORY)
-# =========================================================
-with tab2:
-    st.header("📊 Final Classification Result")
-
-    if RUN_BTN:
-
-        with st.spinner("Running full inference pipeline..."):
-
-            # -----------------------------
-            # MOTILITY INFERENCE
-            # -----------------------------
-            motility = run_motility_inference(
-                video_path=VIDEO_PATH,
-                tracks_csv=TRACKS_CSV,
-                model_path=MOTILITY_MODEL
+        with st.spinner("Menjalankan tracking sperma..."):
+            tracking_result = run_tracking_pipeline(
+                video_path=video_path,
+                out_csv=tracks_csv
             )
 
-            pr = motility["detail"]["PR"]
-            np_ = motility["detail"]["NP"]
-            im = motility["detail"]["IM"]
-            total_mot = pr + np_ + im
+        df_tracks = pd.read_csv(tracks_csv)
 
-            pr_pct = pr / total_mot * 100
-            np_pct = np_ / total_mot * 100
-            im_pct = im / total_mot * 100
+        col1, col2 = st.columns(2)
 
-            motility_status = (
-                "NORMAL" if (pr_pct + np_pct) > 40 else "ABNORMAL"
+        with col1:
+            st.metric(
+                label="Total Partikel Terdeteksi",
+                value=df_tracks["particle"].nunique()
             )
 
-            # -----------------------------
-            # MORPHOLOGY INFERENCE
-            # -----------------------------
-            morphology = run_morphology_inference("data/morphology/binary_erotion")
-
-            normal_pct = morphology["normal_pct"]
-            abnormal_pct = morphology["abnormal_pct"]
-
-            morphology_status = (
-                "NORMAL" if normal_pct >= 4 else "ABNORMAL"
+        with col2:
+            st.metric(
+                label="Total Frame",
+                value=df_tracks["frame"].nunique()
             )
 
-        # =============================
-        # DASHBOARD DISPLAY
-        # =============================
-        st.markdown("## 🧠 Classification Dashboard")
+        st.markdown("### 📄 Cuplikan Final Tracks")
+        st.dataframe(df_tracks.head(20), use_container_width=True)
 
-        colA, colB = st.columns(2)
+        with st.spinner("Membuat visualisasi trajectory..."):
+            draw_trajectory_video(
+                video_path=video_path,
+                tracks_csv=tracks_csv,
+                output_path=trajectory_video
+            )
 
-        with colA:
-            st.success(f"🚴 MOTILITY STATUS: **{motility_status}**")
-            st.write(f"**PR** : {pr_pct:.2f}%")
-            st.write(f"**NP** : {np_pct:.2f}%")
-            st.write(f"**IM** : {im_pct:.2f}%")
+        st.markdown("### 🎥 Video Trajectory")
+        st.video(trajectory_video)
 
-        with colB:
-            st.info(f"🧬 MORPHOLOGY STATUS: **{morphology_status}**")
-            st.write(f"**Normal**   : {normal_pct:.2f}%")
-            st.write(f"**Abnormal** : {abnormal_pct:.2f}%")
+    # =====================
+    # TAB 2 – INFERENCE
+    # =====================
+    with tab2:
+        st.subheader("📊 Hasil Klasifikasi Motility & Morphology")
 
-        st.divider()
+        # ---------------------
+        # MOTILITY
+        # ---------------------
+        with st.spinner("Inference Motility..."):
+            motility_result = run_motility_inference(
+                video_path=video_path,
+                tracks_csv=tracks_csv,
+                model_path=os.path.join(MODEL_DIR, "motility_3dcnn.h5")
+            )
 
-        # =============================
-        # TRAJECTORY VIDEO
-        # =============================
-        st.subheader("🎥 Sperm Trajectory Visualization")
+        pr = motility_result["detail"]["PR"]
+        np_ = motility_result["detail"]["NP"]
+        im = motility_result["detail"]["IM"]
+        total = pr + np_ + im
 
-        output_video = "temp/trajectory.mp4"
-        os.makedirs("temp", exist_ok=True)
+        motility_normal = ((pr + np_) / max(total, 1)) >= 0.4
 
-        draw_trajectory_video(
-            video_path=VIDEO_PATH,
-            tracks_csv=TRACKS_CSV,
-            output_path=output_video
+        # ---------------------
+        # MORPHOLOGY
+        # ---------------------
+        with st.spinner("Inference Morphology..."):
+            morphology_result = run_morphology_inference(
+                img_dir=os.path.join(TEMP_DIR, "morphology_binary")
+            )
+
+        total_morph = len(morphology_result)
+        normal_morph = sum(
+            1 for x in morphology_result if x["label"] == "Normal"
         )
 
-        st.video(output_video)
+        morph_normal = normal_morph >= 4
 
-    else:
-        st.info("⬅ Tekan **Run Full Analysis** di sidebar untuk memulai")
+        # ---------------------
+        # DASHBOARD
+        # ---------------------
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("## 🚀 Motility")
+            st.metric("PR", pr)
+            st.metric("NP", np_)
+            st.metric("IM", im)
+            st.success(
+                "Motil Normal ✅" if motility_normal else "Motil Abnormal ❌"
+            )
+
+        with col2:
+            st.markdown("## 🧠 Morphology")
+            st.metric("Normal", normal_morph)
+            st.metric("Total", total_morph)
+            st.success(
+                "Morfologi Normal ✅" if morph_normal else "Morfologi Abnormal ❌"
+            )
+
+        st.markdown("---")
+        st.markdown("## 🧾 Kesimpulan Akhir")
+
+        if motility_normal and morph_normal:
+            st.success("✅ Sperma DINYATAKAN NORMAL")
+        else:
+            st.error("❌ Sperma DINYATAKAN ABNORMAL")
+
+else:
+    st.info("⬅️ Upload video dan tekan **Jalankan Analisis**")
+
