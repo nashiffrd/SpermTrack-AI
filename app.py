@@ -64,7 +64,7 @@ if uploaded_video and run_btn:
         st.subheader("🔍 Tracking & Preprocessing")
 
         with st.spinner("Menjalankan tracking sperma..."):
-            tracking_result = run_tracking_pipeline(
+            tracking_result = tracking_pipeline(
                 video_path=video_path,
                 out_csv=tracks_csv
             )
