@@ -9,7 +9,7 @@ from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
 from tracking.visualization import draw_locate_frame, draw_tracks
 # Import analyzer baru kita
-from models.motility_analyzer import run_motility_analysis
+from models.motility-analyzer import run_motility_analysis
 
 # =====================================================
 # PAGE CONFIG
