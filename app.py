@@ -225,8 +225,8 @@ elif st.session_state.page == "Main Dashboard":
     if st.session_state.morphology_result is None:
         with st.spinner("Menjalankan morphology inference..."):
             st.session_state.morphology_result = run_morphology_inference(
-                tracks_csv=tracks_csv,
-                video_dir=os.path.dirname(st.session_state.video_path),
+                video_path=st.session_state.prepared_video,
+                tracks_df=st.session_state.tracks_df,
                 model_path="model_morfologi.h5",
                 work_dir=work_dir
             )
