@@ -9,40 +9,26 @@ Original file is located at
 
 import cv2
 import numpy as np
+import tensorflow as tf
 
+LABEL_MAP = {
+    0: "abnormal",
+    1: "normal"
+}
 
-def extract_features(binary_img):
-    _, binary = cv2.threshold(binary_img, 127, 255, cv2.THRESH_BINARY_INV)
+def load_model(model_path):
+    return tf.keras.models.load_model(model_path, compile=False)
 
-    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if len(contours) == 0:
-        return None
+def preprocess_for_cnn(binary_img):
+    img = cv2.resize(binary_img, (224, 224))
+    img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    img = img.astype(np.float32) / 255.0
+    return np.expand_dims(img, axis=0)
 
-    cnt = max(contours, key=cv2.contourArea)
+def predict_morphology_cnn(model, binary_img, threshold=0.5):
+    x = preprocess_for_cnn(binary_img)
+    prob = model.predict(x, verbose=0)[0][0]
+    label = "normal" if prob >= threshold else "abnormal"
+    return label, prob
 
-    area = cv2.contourArea(cnt)
-    perimeter = cv2.arcLength(cnt, True)
-
-    x, y, w, h = cv2.boundingRect(cnt)
-    aspect_ratio = w / h if h > 0 else 0
-
-    hull = cv2.convexHull(cnt)
-    solidity = area / cv2.contourArea(hull) if cv2.contourArea(hull) > 0 else 0
-
-    return {
-        "area": area,
-        "perimeter": perimeter,
-        "aspect_ratio": aspect_ratio,
-        "solidity": solidity
-    }
-
-
-def predict_morphology(features):
-    if features is None:
-        return "unknown"
-
-    if features["solidity"] > 0.85 and 0.5 < features["aspect_ratio"] < 2.0:
-        return "normal"
-    else:
-        return "abnormal"
 
