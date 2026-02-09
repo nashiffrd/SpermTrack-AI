@@ -8,5 +8,6 @@ scikit-learn==1.4.0
 matplotlib
 trackpy
 tqdm
-ffmpeg
+ffmpeg-python
+
 
