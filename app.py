@@ -14,7 +14,7 @@ from morphology_inference.pipeline import run_morphology_inference
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 WORK_DIR = os.path.join(BASE_DIR, "workdir")
-MODEL_DIR = os.path.join(BASE_DIR, "models")
+MODEL_DIR = os.path.join(BASE_DIR)
 
 MOTILITY_MODEL_PATH = os.path.join(MODEL_DIR, "model_motility.h5")
 MORPHOLOGY_MODEL_PATH = os.path.join(MODEL_DIR, "model_morphology.h5")
