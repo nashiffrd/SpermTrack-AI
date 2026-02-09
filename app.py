@@ -8,7 +8,7 @@ import pandas as pd
 from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
 from tracking.visualization import draw_locate_frame, draw_tracks
-from motility_inference.pipeline import motility_inference_pipeline
+from motility_inference.pipeline import run_motility_inference
 
 # =====================================================
 # PAGE CONFIG
@@ -130,7 +130,7 @@ elif st.session_state.page == "Motility Analysis":
     # -------- MOTILITY --------
     if st.session_state.motility_df is None:
         with st.spinner("Motility inference..."):
-            motility_df = motility_inference_pipeline(
+            motility_df = run_motility_inference(
                 video_path=st.session_state.prepared_video,
                 tracks_df=tracks_df
             )
