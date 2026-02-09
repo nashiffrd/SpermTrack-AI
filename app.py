@@ -64,7 +64,7 @@ if st.session_state.page == "Halaman Awal":
 
     if st.button("▶ Start Analysis"):
         st.session_state.page = "Data Loader"
-        st.experimental_rerun()
+        st.rerun()
 
 # =====================================================
 # DATA LOADER
@@ -92,7 +92,7 @@ elif st.session_state.page == "Data Loader":
 
         if st.button("➡ Lanjutkan Preprocessing"):
             st.session_state.page = "Data Preprocessing"
-            st.experimental_rerun()
+            st.rerun()
 
 # =====================================================
 # DATA PREPROCESSING (AUTO RUN)
