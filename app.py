@@ -1,20 +1,29 @@
 # app.py
 import os
+import cv2
 import tempfile
 import streamlit as st
 import pandas as pd
+import numpy as np
 
-# ===== IMPORT PIPELINE =====
 from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
+import trackpy as tp
 
-# ===== PAGE CONFIG =====
+# =====================================================
+# PAGE CONFIG
+# =====================================================
 st.set_page_config(
     page_title="Sperm Analysis App",
     layout="wide"
 )
 
-# ===== SESSION STATE INIT =====
+# =====================================================
+# SESSION STATE
+# =====================================================
+if "page" not in st.session_state:
+    st.session_state.page = "Halaman Awal"
+
 if "video_path" not in st.session_state:
     st.session_state.video_path = None
 
@@ -24,42 +33,43 @@ if "prepared_video" not in st.session_state:
 if "tracks_df" not in st.session_state:
     st.session_state.tracks_df = None
 
-# ===== SIDEBAR NAVIGATION =====
+# =====================================================
+# SIDEBAR NAVIGATION
+# =====================================================
 st.sidebar.title("Navigasi")
-page = st.sidebar.radio(
+st.session_state.page = st.sidebar.radio(
     "Pilih Halaman",
-    [
-        "Halaman Awal",
-        "Data Loader",
-        "Data Preprocessing"
-    ]
+    ["Halaman Awal", "Data Loader", "Data Preprocessing"],
+    index=["Halaman Awal", "Data Loader", "Data Preprocessing"].index(st.session_state.page)
 )
 
-# =========================================================
-# ====================== HALAMAN AWAL =====================
-# =========================================================
-if page == "Halaman Awal":
+# =====================================================
+# HALAMAN AWAL
+# =====================================================
+if st.session_state.page == "Halaman Awal":
     st.title("Aplikasi Analisis Motilitas dan Morfologi Spermatozoa")
 
     st.markdown("""
-    Aplikasi ini digunakan untuk melakukan analisis sperma berbasis video
-    melalui tahapan **preprocessing**, **tracking**, dan analisis lanjutan.
+    Aplikasi ini melakukan analisis sperma berbasis video melalui tahapan:
+    **preprocessing**, **tracking**, dan analisis lanjutan.
     """)
 
     st.subheader("Cara Penggunaan")
     st.markdown("""
-    1. Masuk ke menu **Data Loader**
+    1. Klik **Start Analysis**
     2. Upload video sperma
-    3. Jalankan preprocessing dan tracking
-    4. Lanjutkan ke tahap analisis berikutnya
+    3. Sistem otomatis melakukan preprocessing & tracking
+    4. Hasil ditampilkan pada halaman Data Preprocessing
     """)
 
-    st.button("▶ Start Analisis")
+    if st.button("▶ Start Analysis"):
+        st.session_state.page = "Data Loader"
+        st.experimental_rerun()
 
-# =========================================================
-# ======================= DATA LOADER =====================
-# =========================================================
-elif page == "Data Loader":
+# =====================================================
+# DATA LOADER
+# =====================================================
+elif st.session_state.page == "Data Loader":
     st.header("Data Loader")
 
     uploaded_file = st.file_uploader(
@@ -80,94 +90,99 @@ elif page == "Data Loader":
 
         st.success("Video berhasil diupload")
 
-    if st.session_state.video_path:
-        st.info("Video siap diproses")
+        if st.button("➡ Lanjutkan Preprocessing"):
+            st.session_state.page = "Data Preprocessing"
+            st.experimental_rerun()
 
-# =========================================================
-# =================== DATA PREPROCESSING ==================
-# =========================================================
-elif page == "Data Preprocessing":
+# =====================================================
+# DATA PREPROCESSING (AUTO RUN)
+# =====================================================
+elif st.session_state.page == "Data Preprocessing":
     st.header("Data Preprocessing & Tracking")
 
     if st.session_state.video_path is None:
         st.warning("Silakan upload video terlebih dahulu.")
         st.stop()
 
-    # ---------- PREPROCESSING ----------
+    # ================== AUTO PREPROCESSING ==================
     if st.session_state.prepared_video is None:
-        if st.button("⚙ Jalankan Preprocessing Video"):
-            with st.spinner("Menjalankan preprocessing video..."):
-                work_dir = tempfile.mkdtemp()
+        with st.spinner("Menjalankan preprocessing video..."):
+            work_dir = tempfile.mkdtemp()
+            st.session_state.prepared_video = prepare_video_pipeline(
+                st.session_state.video_path,
+                work_dir
+            )
 
-                prepared_video = prepare_video_pipeline(
-                    input_video_path=st.session_state.video_path,
-                    working_dir=work_dir
-                )
+    # ================== AUTO TRACKING ==================
+    if st.session_state.tracks_df is None:
+        with st.spinner("Menjalankan tracking sperma..."):
+            output_csv = os.path.join(
+                os.path.dirname(st.session_state.prepared_video),
+                "final_tracks.csv"
+            )
+            st.session_state.tracks_df = tracking_pipeline(
+                st.session_state.prepared_video,
+                output_csv
+            )
 
-                st.session_state.prepared_video = prepared_video
+    tracks_df = st.session_state.tracks_df
 
-            st.success("Preprocessing selesai")
-
-    else:
-        st.success("Preprocessing sudah dijalankan")
-
-    # ---------- TRACKING ----------
-    if st.session_state.prepared_video and st.session_state.tracks_df is None:
-        if st.button("🧬 Jalankan Tracking"):
-            with st.spinner("Menjalankan tracking sperma..."):
-                output_csv = os.path.join(
-                    os.path.dirname(st.session_state.prepared_video),
-                    "final_tracks.csv"
-                )
-
-                tracks_df = tracking_pipeline(
-                    prepared_video_path=st.session_state.prepared_video,
-                    output_csv_path=output_csv
-                )
-
-                st.session_state.tracks_df = tracks_df
-
-            st.success("Tracking selesai")
-
-    # ---------- INFO CARDS ----------
+    # ================== INFO CARDS ==================
     col1, col2 = st.columns(2)
-
     with col1:
-        total_particles = (
-            len(st.session_state.tracks_df)
-            if st.session_state.tracks_df is not None else "-"
-        )
-        st.metric("Total Partikel", total_particles)
-
+        st.metric("Total Partikel", len(tracks_df))
     with col2:
-        total_tracks = (
-            st.session_state.tracks_df["particle"].nunique()
-            if st.session_state.tracks_df is not None else "-"
-        )
-        st.metric("Total Tracking", total_tracks)
+        st.metric("Total Tracking", tracks_df["particle"].nunique())
 
     st.divider()
 
-    # ---------- VISUAL PLACEHOLDER ----------
-    colA, colB = st.columns(2)
+    # =====================================================
+    # VISUALISASI FRAME LOCATE & LINK-DRIFT
+    # =====================================================
+    cap = cv2.VideoCapture(st.session_state.prepared_video)
+    ret, frame = cap.read()
+    cap.release()
 
+    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    frame_idx = tracks_df["frame"].min()
+    frame_tracks = tracks_df[tracks_df["frame"] == frame_idx]
+
+    # ---------- LOCATE VIS ----------
+    locate_vis = cv2.cvtColor(frame_gray, cv2.COLOR_GRAY2BGR)
+    for _, r in frame_tracks.iterrows():
+        cv2.circle(
+            locate_vis,
+            (int(r["x"]), int(r["y"])),
+            8,
+            (0, 255, 0),
+            1
+        )
+
+    # ---------- LINK & DRIFT VIS ----------
+    link_vis = cv2.cvtColor(frame_gray, cv2.COLOR_GRAY2BGR)
+    for pid, grp in tracks_df.groupby("particle"):
+        pts = grp[grp["frame"] <= frame_idx][["x", "y"]].values.astype(int)
+        for i in range(1, len(pts)):
+            cv2.line(
+                link_vis,
+                tuple(pts[i - 1]),
+                tuple(pts[i]),
+                (255, 0, 0),
+                1
+            )
+
+    colA, colB = st.columns(2)
     with colA:
         st.subheader("Hasil Locate")
-        st.info("Visualisasi frame hasil locate akan ditampilkan di sini")
+        st.image(locate_vis, channels="BGR")
 
     with colB:
         st.subheader("Hasil Link & Drift")
-        st.info("Visualisasi frame hasil linking & drift akan ditampilkan di sini")
+        st.image(link_vis, channels="BGR")
 
     st.divider()
 
-    # ---------- TABLE ----------
+    # ================== TABLE ==================
     st.subheader("Final Tracks Data")
-
-    if st.session_state.tracks_df is not None:
-        st.dataframe(
-            st.session_state.tracks_df,
-            use_container_width=True
-        )
-    else:
-        st.info("Tabel final_tracks akan muncul setelah tracking dijalankan")
+    st.dataframe(tracks_df, use_container_width=True)
