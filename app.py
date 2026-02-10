@@ -117,7 +117,7 @@ elif st.session_state.page == "Analysis Dashboard":
     # 1. TOMBOL MOTILITY
     with colA:
         if st.button("🚀 Jalankan Analisis Motilitas", use_container_width=True):
-            model_path = "models/best_3dcnn.h5"
+            model_path = "model_motility.h5"
             if os.path.exists(model_path):
                 with st.spinner("Menganalisis pergerakan (3D-CNN)..."):
                     st.session_state.motility_results = run_motility_analysis(
