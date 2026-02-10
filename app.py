@@ -24,9 +24,7 @@ st.set_page_config(
 # Custom CSS untuk mempercantik UI
 st.markdown("""
     <style>
-    .main {
-        background-color: #f5f7f9;
-    }
+    .main { background-color: #f5f7f9; }
     .stButton>button {
         width: 100%;
         border-radius: 5px;
@@ -34,19 +32,12 @@ st.markdown("""
         background-color: #007bff;
         color: white;
     }
-    .stMetric {
-        background-color: #ffffff;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
     </style>
     """, unsafe_allow_html=True)
 
 # =====================================================
 # SESSION STATE INITIALIZATION
 # =====================================================
-# Menggunakan session state agar data tidak hilang saat rerun
 if "page" not in st.session_state:
     st.session_state.page = "Halaman Awal"
 if "video_path" not in st.session_state:
@@ -73,7 +64,7 @@ st.session_state.page = st.sidebar.radio(
 
 st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Reset Aplikasi"):
-    for key in st.session_state.keys():
+    for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
 
@@ -83,15 +74,12 @@ if st.sidebar.button("🔄 Reset Aplikasi"):
 if st.session_state.page == "Halaman Awal":
     st.title("Sistem Analisis Spermatozoa Terintegrasi")
     st.markdown("""
-    Selamat datang di aplikasi **AI Sperm Analysis**. Sistem ini mengotomatisasi pemeriksaan semen menggunakan metode:
+    Aplikasi ini dirancang untuk mendeteksi dan menganalisis kualitas spermatozoa secara otomatis:
     
-    * **Tracking:** Menggunakan algoritma *Trackpy* untuk mendeteksi setiap pergerakan partikel.
-    * **Motilitas:** Klasifikasi PR, NP, dan IM menggunakan model **3D-CNN**.
-    * **Morfologi:** Klasifikasi Normal dan Abnormal menggunakan **EfficientNetV2S** dengan pemrosesan *Binary Erosion*.
+    * **Motilitas:** Menggunakan model **3D-CNN** lokal untuk klasifikasi PR, NP, dan IM.
+    * **Morfologi:** Menggunakan model **EfficientNetV2S** (via Hugging Face) untuk klasifikasi Normal/Abnormal.
     """)
     
-    
-
     if st.button("Mulai Analisis Sekarang ➡"):
         st.session_state.page = "Upload & Tracking"
         st.rerun()
@@ -105,16 +93,14 @@ elif st.session_state.page == "Upload & Tracking":
     uploaded_file = st.file_uploader("Upload Video (Format: .mp4, .avi)", type=["mp4", "avi", "mov"])
 
     if uploaded_file:
-        # Simpan file sementara
-        tfile = tempfile.NamedTemporaryFile(delete=False)
+        tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
         tfile.write(uploaded_file.read())
         st.session_state.video_path = tfile.name
         
         st.success("Video Berhasil Diunggah!")
         
         if st.button("Jalankan Preprocessing & Tracking 🚀"):
-            with st.spinner("Sedang memproses video (Grayscale/Contrast) dan menjalankan tracking..."):
-                # Buat folder sementara untuk output
+            with st.spinner("Sedang memproses video dan menjalankan tracking..."):
                 temp_dir = tempfile.mkdtemp()
                 
                 # A. Pipeline Preparation
@@ -123,8 +109,8 @@ elif st.session_state.page == "Upload & Tracking":
                 
                 # B. Pipeline Tracking
                 csv_out = os.path.join(temp_dir, "final_tracks.csv")
-                tracks = tracking_pipeline(prep_path, csv_out)
-                st.session_state.tracks_df = tracks.reset_index(drop=True)
+                df_tracks = tracking_pipeline(prep_path, csv_out)
+                st.session_state.tracks_df = df_tracks.reset_index(drop=True)
                 
             st.success("Tracking Selesai!")
             st.session_state.page = "Dashboard Analisis"
@@ -140,72 +126,66 @@ elif st.session_state.page == "Dashboard Analisis":
         st.warning("Silakan selesaikan tahap Tracking terlebih dahulu.")
         st.stop()
 
-    # Ringkasan Data Awal
-    total_sperm = st.session_state.tracks_df['particle'].nunique()
-    st.metric(label="Total Sperma Terdeteksi", value=total_sperm)
-
+    st.metric(label="Total Sperma Terdeteksi", value=st.session_state.tracks_df['particle'].nunique())
     st.divider()
 
-    # Kolom Tombol Analisis
     col1, col2 = st.columns(2)
 
     with col1:
         st.subheader("Analisis Motilitas")
         if st.button("Jalankan 3D-CNN Motility"):
-            with st.spinner("Mengekstrak clips dan melakukan prediksi motilitas..."):
-                # Catatan: Fungsi ini sekarang akan mengambil model dari Hugging Face secara internal jika dikonfigurasi
-                results_mot = run_motility_analysis(
-                    st.session_state.prepared_video, 
-                    st.session_state.tracks_df
-                )
-                st.session_state.motility_results = results_mot
-            st.balloons()
+            # LOKAL: Mengambil model h5 dari folder models/ di repositori
+            model_mot_path = "model_motility.h5"
+            
+            if os.path.exists(model_mot_path):
+                with st.spinner("Menganalisis pergerakan (Model Lokal)..."):
+                    results_mot = run_motility_analysis(
+                        st.session_state.prepared_video, 
+                        st.session_state.tracks_df,
+                        model_mot_path # Kirim path lokal
+                    )
+                    st.session_state.motility_results = results_mot
+                st.success("Motilitas Selesai!")
+            else:
+                st.error(f"File model tidak ditemukan di {model_mot_path}")
 
     with col2:
         st.subheader("Analisis Morfologi")
         if st.button("Jalankan EfficientNet Morfologi"):
-            with st.spinner("Mengekstrak ROI, Binary Erosion, dan Prediksi Morfologi..."):
-                # Fungsi ini menarik model dari Hugging Face: nashiffrd/SpermMorpho
+            with st.spinner("Mengunduh model dari Hugging Face & Analisis Bentuk..."):
+                # HUGGING FACE: Model diunduh otomatis di dalam fungsi ini
                 results_morf = run_morphology_analysis(
                     st.session_state.prepared_video, 
                     st.session_state.tracks_df
                 )
                 st.session_state.morphology_results = results_morf
-            st.balloons()
+            st.success("Morfologi Selesai!")
 
-    # TAMPILAN HASIL (Jika sudah di-run)
+    # --- TAMPILAN HASIL ---
     st.divider()
-    
-    # Grid Hasil
     res_col_a, res_col_b = st.columns(2)
 
     with res_col_a:
         if st.session_state.motility_results is not None:
             st.write("### 📊 Hasil Motilitas")
             df_mot = st.session_state.motility_results
-            counts = df_mot['motility_label'].value_counts()
-            st.bar_chart(counts)
+            st.bar_chart(df_mot['motility_label'].value_counts())
             st.dataframe(df_mot[['particle', 'motility_label', 'confidence']], use_container_width=True)
 
     with res_col_b:
         if st.session_state.morphology_results is not None:
             st.write("### 🔬 Hasil Morfologi")
             df_morf = st.session_state.morphology_results
-            counts_m = df_morf['morphology_label'].value_counts()
-            st.pie_chart(counts_m)
+            st.pie_chart(df_morf['morphology_label'].value_counts())
             
-            # Tampilkan sampel gambar erosion
             st.write("Sampel ROI (Binary Erosion):")
             img_grid = st.columns(3)
             for i, row in df_morf.head(3).iterrows():
                 img_grid[i].image(row['image_display'], caption=f"ID:{row['particle']} - {row['morphology_label']}")
 
-    # DOWNLOAD REPORT
+    # --- DOWNLOAD REPORT ---
     if st.session_state.motility_results is not None:
         st.divider()
-        st.subheader("💾 Unduh Laporan")
-        
-        # Merge data jika kedua analisis sudah ada
         final_df = st.session_state.motility_results.copy()
         if st.session_state.morphology_results is not None:
             final_df = final_df.merge(
@@ -213,11 +193,9 @@ elif st.session_state.page == "Dashboard Analisis":
                 on='particle', how='left'
             )
             
-        csv = final_df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            "Download CSV Report",
-            csv,
-            "sperm_analysis_report.csv",
-            "text/csv",
-            key='download-csv'
+            "Download Report (.csv)",
+            final_df.to_csv(index=False).encode('utf-8'),
+            "sperm_report.csv",
+            "text/csv"
         )
