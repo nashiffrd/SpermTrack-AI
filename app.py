@@ -8,8 +8,8 @@ import numpy as np
 # Import modul internal dari struktur folder kamu
 from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
-from analysis.motility_analyzer import run_motility_analysis
-from analysis.morphology_analyzer import run_morphology_analysis
+from models.motility_analyzer import run_motility_analysis
+from models.morphology_analyzer import run_morphology_analysis
 
 # =====================================================
 # PAGE CONFIG
