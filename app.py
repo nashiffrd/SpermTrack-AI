@@ -10,33 +10,25 @@ from models.motility_analyzer import run_motility_analysis
 from models.morphology_analyzer import run_morphology_analysis
 
 # ==========================================
-# 1. CONFIG & STYLE (MED-TECH THEME)
+# 1. CONFIG & STYLE
 # ==========================================
 st.set_page_config(page_title="Sperm Analysis AI", layout="wide", page_icon="🧬")
 
 st.markdown("""
     <style>
-    .main { background-color: #f8f9fa; }
     .main-result-card {
         background-color: #ffffff;
-        padding: 25px;
-        border-radius: 15px;
+        padding: 20px;
+        border-radius: 12px;
         text-align: center;
         border: 2px solid #007bff;
-        margin-bottom: 20px;
     }
     .metric-container {
         background-color: #ffffff;
-        padding: 20px;
+        padding: 15px;
         border-radius: 10px;
         border: 1px solid #e0e0e0;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
-    }
-    .stTabs [data-baseweb="tab-list"] { gap: 24px; }
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
-        font-weight: bold;
+        text-align: center;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -53,10 +45,10 @@ if 'morphology_results' not in st.session_state: st.session_state.morphology_res
 # 3. TAB NAVIGATION
 # ==========================================
 tab1, tab2, tab3, tab4 = st.tabs([
-    "🏠 HALAMAN AWAL", 
-    "⚙️ DATA LOADER & PROCESSING", 
-    "🔬 ANALYSIS PROCESS", 
-    "📊 SUMMARY DASHBOARD"
+    "🏠 Halaman Awal", 
+    "⚙️ Data Loader & Processing", 
+    "🔬 Analysis Process", 
+    "📊 Summary Dashboard"
 ])
 
 # ------------------------------------------
@@ -64,180 +56,131 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # ------------------------------------------
 with tab1:
     st.title("DETEKSI ABNORMALITAS MOTILITY DAN MORFOLOGI SPERMATOZOA")
-    st.subheader("Sistem Analisis Semen Otomatis Berbasis Artificial Intelligence")
-    
-    col_intro, col_img = st.columns([1, 1])
-    with col_intro:
-        st.markdown("""
-        ### Deskripsi Proyek
-        Sistem ini mengintegrasikan teknologi **Computer Vision** untuk membantu standarisasi analisis sperma.
-        
-        **Fitur Utama:**
-        * **Tracking Multi-Objek:** Deteksi lintasan sperma secara *real-time*.
-        * **Motility Grading:** Klasifikasi PR, NP, dan IM menggunakan arsitektur **3D-CNN**.
-        * **Morphology Analysis:** Identifikasi struktur Normal/Abnormal dengan **EfficientNetV2S**.
-        
-        ### Petunjuk Penggunaan
-        1. Buka Tab **Data Loader** untuk mengunggah video sampel.
-        2. Klik tombol **Preprocessing** untuk ekstraksi fitur video.
-        3. Lakukan kalkulasi pada Tab **Analysis Process**.
-        4. Evaluasi hasil akhir pada Tab **Summary Dashboard**.
-        """)
-    
-    with col_img:
-        st.info("Informasi Grade Motilitas (WHO Standards)")
-        # Tambahkan diagram jika tersedia
-        
+    st.subheader("Sistem Analisis Otomatis Berbasis Deep Learning")
+    st.write("""
+    Aplikasi ini dirancang untuk mempermudah analisis kualitas spermatozoa melalui video mikroskopis.
+    Sistem bekerja secara otomatis mulai dari pembersihan video, pelacakan partikel (tracking), 
+    hingga klasifikasi menggunakan model AI (3D-CNN dan EfficientNetV2S).
+    """)
+    st.info("Gunakan navigasi tab di atas untuk memulai proses analisis.")
 
 # ------------------------------------------
 # TAB 2: DATA LOADER & PROCESSING
 # ------------------------------------------
 with tab2:
-    st.header("Upload File & Digital Processing")
-    video_file = st.file_uploader("Upload Video Sampel (.mp4, .avi)", type=['mp4', 'avi'])
+    st.header("Upload & Digital Processing")
+    video_file = st.file_uploader("Pilih Video Sperma", type=['mp4', 'avi'])
     
     if video_file:
         tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
         tfile.write(video_file.read())
         
-        if st.button("Lakukan Preprocessing & Tracking 🚀"):
-            with st.status("Sedang memproses video...", expanded=True) as status:
+        if st.button("Jalankan Preprocessing & Tracking 🚀"):
+            with st.status("Sedang memproses...", expanded=True) as status:
                 temp_dir = tempfile.mkdtemp()
                 
-                # A. Pipeline Preprocessing
-                st.write("🔧 Menjalankan transformasi Grayscale & Contrast...")
+                # A. Preprocessing
                 prep_path = prepare_video_pipeline(tfile.name, temp_dir)
                 st.session_state.prepared_video = prep_path
                 
-                # Visualisasi Preprocessing
+                # Visualisasi (Asli > Gray > Contrast)
                 cap = cv2.VideoCapture(tfile.name)
-                ret, frame_orig = cap.read()
+                ret, frame = cap.read()
                 if ret:
                     c1, c2, c3 = st.columns(3)
-                    c1.image(frame_orig, caption="Frame Asli", use_container_width=True)
-                    c2.image(cv2.cvtColor(frame_orig, cv2.COLOR_BGR2GRAY), caption="Frame Grayscale", use_container_width=True)
-                    # Simulasi kontras yang ditingkatkan
-                    c3.image(cv2.convertScaleAbs(frame_orig, alpha=1.5, beta=10), caption="Frame Contrast", use_container_width=True)
+                    c1.image(frame, caption="Frame Asli", use_container_width=True)
+                    c2.image(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
+                    c3.image(cv2.convertScaleAbs(frame, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
                 cap.release()
                 
-                # B. Pipeline Tracking
-                st.write("📍 Mendeteksi partikel dan membuat lintasan (Linker)...")
-                csv_out = os.path.join(temp_dir, "tracks.csv")
-                df = tracking_pipeline(prep_path, csv_out)
+                # B. Tracking
+                df = tracking_pipeline(prep_path, os.path.join(temp_dir, "tracks.csv"))
                 
-                # FIX: Reset index agar kolom 'frame' dan 'particle' terbaca sebagai kolom, bukan index
-                st.session_state.tracks_df = df.reset_index()
+                # --- FIX VALUE ERROR: CEK DUPLIKASI KOLOM SEBELUM RESET INDEX ---
+                if 'frame' not in df.columns:
+                    df = df.reset_index()
+                else:
+                    df = df.reset_index(drop=True)
                 
-                status.update(label="Preprocessing & Tracking Selesai!", state="complete")
+                st.session_state.tracks_df = df
+                status.update(label="Tracking Selesai!", state="complete")
 
-        # Tampilkan Informasi Partikel jika tracking sudah selesai
         if st.session_state.tracks_df is not None:
             st.divider()
             m1, m2 = st.columns(2)
-            with m1:
-                st.markdown(f"""<div class='metric-container'>
-                            <p>Total Partikel Terdeteksi</p>
-                            <h2>{st.session_state.tracks_df['particle'].nunique()}</h2>
-                            </div>""", unsafe_allow_html=True)
-            with m2:
-                st.markdown(f"""<div class='metric-container'>
-                            <p>Total Baris Data Lintasan</p>
-                            <h2>{len(st.session_state.tracks_df)}</h2>
-                            </div>""", unsafe_allow_html=True)
-            
-            with st.expander("Lihat Tabel Final Tracks"):
-                st.dataframe(st.session_state.tracks_df, use_container_width=True)
+            m1.markdown(f"<div class='metric-container'><h4>Total Partikel</h4><h2>{st.session_state.tracks_df['particle'].nunique()}</h2></div>", unsafe_allow_html=True)
+            m2.markdown(f"<div class='metric-container'><h4>Total Lintasan</h4><h2>{len(st.session_state.tracks_df)}</h2></div>", unsafe_allow_html=True)
+            st.dataframe(st.session_state.tracks_df.head(50), use_container_width=True)
 
 # ------------------------------------------
-# TAB 3: PROCESS MOTILITY & MORFOLOGI
+# TAB 3: ANALYSIS PROCESS
 # ------------------------------------------
 with tab3:
-    st.header("Analisis Laboratorium AI")
+    st.header("Kalkulasi Motilitas & Morfologi")
     if st.session_state.tracks_df is None:
-        st.warning("⚠️ Silakan selesaikan proses di Tab **Data Loader** terlebih dahulu.")
+        st.warning("Silakan selesaikan proses di Tab 2 terlebih dahulu.")
     else:
-        col_btn1, col_btn2 = st.columns(2)
-        
-        with col_btn1:
-            st.subheader("Analisis Motilitas")
-            if st.button("🚀 Jalankan Hitung Motilitas"):
-                # Gunakan model lokal untuk motility
-                model_mot = "model_motility.h5" 
-                with st.spinner("3D-CNN sedang mengklasifikasi pergerakan..."):
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            if st.button("🚀 Jalankan Analisis Motilitas"):
+                with st.spinner("Menghitung pergerakan..."):
                     st.session_state.motility_results = run_motility_analysis(
-                        st.session_state.prepared_video, 
-                        st.session_state.tracks_df, 
-                        model_mot
+                        st.session_state.prepared_video, st.session_state.tracks_df, "model_motility.h5"
                     )
-                st.success("Analisis Motilitas Berhasil!")
-
-        with col_btn2:
-            st.subheader("Analisis Morfologi")
-            if st.button("🔬 Jalankan Hitung Morfologi"):
-                # Morphology otomatis download dari HuggingFace di dalam fungsi
-                with st.spinner("EfficientNet sedang menganalisis bentuk (ROI Erosion)..."):
+                st.success("Motilitas Selesai!")
+        with col_m2:
+            if st.button("🔬 Jalankan Analisis Morfologi"):
+                with st.spinner("Menganalisis bentuk..."):
                     st.session_state.morphology_results = run_morphology_analysis(
-                        st.session_state.prepared_video, 
-                        st.session_state.tracks_df
+                        st.session_state.prepared_video, st.session_state.tracks_df
                     )
-                st.success("Analisis Morfologi Berhasil!")
+                st.success("Morfologi Selesai!")
 
 # ------------------------------------------
 # TAB 4: SUMMARY DASHBOARD
 # ------------------------------------------
 with tab4:
     if st.session_state.motility_results is None or st.session_state.morphology_results is None:
-        st.info("💡 Hasil ringkasan akan muncul di sini setelah Anda menjalankan analisis di Tab 3.")
+        st.info("Hasil analisis akan tampil setelah Tab 3 selesai diproses.")
     else:
-        # Kotak Paling Atas: Main Result
-        # Logika sederhana fertil (contoh: PR > 32%)
-        m_results = st.session_state.motility_results
-        pr_ratio = (len(m_results[m_results['motility_label'] == 'PR']) / len(m_results)) * 100
-        status_fertil = "FERTIL" if pr_ratio > 32 else "INFERTIL"
+        # Main Result
+        m_res = st.session_state.motility_results
+        pr_val = len(m_res[m_res['motility_label'] == 'PR'])
+        status_f = "FERTIL" if pr_val > (0.32 * len(m_res)) else "INFERTIL"
         
-        st.markdown(f"""<div class='main-result-card'>
-                    <h1>Main Result : {status_fertil}</h1>
-                    <p>Berdasarkan parameter motilitas progresif dan morfologi normal</p>
-                    </div>""", unsafe_allow_html=True)
+        st.markdown(f"<div class='main-result-card'><h1>Main Result : {status_f}</h1></div>", unsafe_allow_html=True)
+        st.write("")
 
-        # Baris Tengah: Motility dan Morphology (%)
-        r1_c1, r1_c2 = st.columns([2, 1])
-        
-        with r1_c1:
+        # Motility & Morphology (%)
+        r1c1, r1c2 = st.columns([2, 1])
+        with r1c1:
             with st.container(border=True):
-                st.subheader("Motility (%)")
-                m_counts = m_results['motility_label'].value_counts()
+                st.write("**Motility (%)**")
+                counts = m_res['motility_label'].value_counts()
                 c1, c2, c3 = st.columns(3)
-                c1.metric("Progressive (PR)", m_counts.get('PR', 0))
-                c2.metric("Non-Progressive (NP)", m_counts.get('NP', 0))
-                c3.metric("Immotile (IM)", m_counts.get('IM', 0))
-                st.bar_chart(m_counts)
+                c1.metric("Progressive", counts.get('PR', 0))
+                c2.metric("Non-Progressive", counts.get('NP', 0))
+                c3.metric("Immotile", counts.get('IM', 0))
 
-        with r1_c2:
+        with r1c2:
             with st.container(border=True):
-                st.subheader("Morfologi (%)")
-                mor_results = st.session_state.morphology_results
-                mor_counts = mor_results['morphology_label'].value_counts()
-                st.write(f"**Normal:** {mor_counts.get('Normal', 0)}")
-                st.write(f"**Abnormal:** {mor_counts.get('Abnormal', 0)}")
-                # Bar chart kecil untuk morfologi
-                st.bar_chart(mor_counts)
+                st.write("**Morfologi (%)**")
+                mo_res = st.session_state.morphology_results
+                mo_counts = mo_res['morphology_label'].value_counts()
+                st.write(f"Normal: {mo_counts.get('Normal', 0)}")
+                st.write(f"Abnormal: {mo_counts.get('Abnormal', 0)}")
 
-        # Baris Bawah: Visualisasi Video dan Sampel Morfologi
-        r2_c1, r2_c2 = st.columns([2, 1])
-        
-        with r2_c1:
+        # Video & Sampel
+        r2c1, r2c2 = st.columns([2, 1])
+        with r2c1:
             with st.container(border=True):
-                st.subheader("Visualisasi Pergerakan Sperma")
+                st.write("**Visualisasi Pergerakan Sperma**")
                 st.video(st.session_state.prepared_video)
-                st.caption("Video hasil preprocessing (Grayscale/Contrast) yang digunakan untuk tracking.")
-
-        with r2_c2:
+        with r2c2:
             with st.container(border=True):
-                st.subheader("Sampel Normal Morfologi")
-                normal_samples = mor_results[mor_results['morphology_label'] == 'Normal']
-                if not normal_samples.empty:
-                    # Ambil satu gambar sampel display
-                    st.image(normal_samples.iloc[0]['image_display'], caption="Contoh Struktur Normal", use_container_width=True)
+                st.write("**Sampel Normal Morfologi**")
+                norm_img = mo_res[mo_res['morphology_label'] == 'Normal']
+                if not norm_img.empty:
+                    st.image(norm_img.iloc[0]['image_display'], use_container_width=True)
                 else:
-                    st.warning("Tidak ditemukan sampel sperma normal.")
+                    st.write("Tidak ada sampel normal.")
