@@ -6,8 +6,8 @@ import tempfile
 import numpy as np
 from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
-from analysis.motility_analyzer import run_motility_analysis
-from analysis.morphology_analyzer import run_morphology_analysis
+from models.motility_analyzer import run_motility_analysis
+from models.morphology_analyzer import run_morphology_analysis
 
 # ==========================================
 # CONFIG & STYLE
@@ -125,7 +125,7 @@ with tab3:
         col_m1, col_m2 = st.columns(2)
         with col_m1:
             if st.button("🚀 Hitung Motilitas (3D-CNN)"):
-                st.session_state.motility_results = run_motility_analysis(st.session_state.prepared_video, st.session_state.tracks_df, "models/best_3dcnn.h5")
+                st.session_state.motility_results = run_motility_analysis(st.session_state.prepared_video, st.session_state.tracks_df, "model_motility.h5")
                 st.success("Motilitas Selesai!")
         with col_m2:
             if st.button("🔬 Hitung Morfologi (EfficientNet)"):
