@@ -56,11 +56,17 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # ------------------------------------------
 with tab1:
     st.title("DETEKSI ABNORMALITAS MOTILITY DAN MORFOLOGI SPERMATOZOA")
-    st.subheader("Sistem Analisis Otomatis Berbasis Deep Learning")
+    st.subheader("Sistem Analisis Semen Otomatis Berbasis Deep Learning")
     st.write("""
     Aplikasi ini dirancang untuk mempermudah analisis kualitas spermatozoa melalui video mikroskopis.
     Sistem bekerja secara otomatis mulai dari pembersihan video, pelacakan partikel (tracking), 
     hingga klasifikasi menggunakan model AI (3D-CNN dan EfficientNetV2S).
+
+    **Cara Penggunaan:**
+    1. Upload video pada tab **Data Loader**.
+    2. Lakukan preprocessing dan tracking.
+    3. Jalankan analisis motilitas dan morfologi pada tab **Analysis Process**.
+    4. Lihat kesimpulan akhir pada tab **Summary Dashboard**.
     """)
     st.info("Gunakan navigasi tab di atas untuk memulai proses analisis.")
 
