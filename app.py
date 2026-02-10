@@ -176,7 +176,8 @@ elif st.session_state.page == "Dashboard Analisis":
         if st.session_state.morphology_results is not None:
             st.write("### 🔬 Hasil Morfologi")
             df_morf = st.session_state.morphology_results
-            st.pie_chart(df_morf['morphology_label'].value_counts())
+            morf_counts = df_morf['morphology_label'].value_counts()
+            st.bar_chart(morf_counts)
             
             st.write("Sampel ROI (Binary Erosion):")
             img_grid = st.columns(3)
