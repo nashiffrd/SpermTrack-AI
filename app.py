@@ -93,7 +93,6 @@ with tab2:
     video_file = st.file_uploader("Pilih Video Sperma", type=['mp4', 'avi'])
 
     if video_file:
-        # --- LOGIKA RESET (Tambahkan ini) ---
         # Membuat ID unik untuk video (nama + ukuran file)
         current_video_id = f"{video_file.name}_{video_file.size}"
         
@@ -108,6 +107,22 @@ with tab2:
             # 1. Simpan video upload ke file temporary
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
             tfile.write(video_file.read())
+            
+            with st.status("Preprocessing and Tracking are Running", expanded=True) as status:
+                temp_dir = tempfile.mkdtemp()
+                
+                # --- VISUALISASI TAHAP A (MENGGUNAKAN TFILE) ---
+                cap = cv2.VideoCapture(tfile.name)
+                ret, frame = cap.read()
+                if ret:
+                    st.session_state.sample_frame = frame
+                    # Tampilkan saat proses berjalan
+                    st.write("### Visualisasi Tahap A (Preprocessing)")
+                    c1, c2, c3 = st.columns(3)
+                    c1.image(frame, caption="Frame Asli (tfile)", use_container_width=True)
+                    c2.image(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
+                    c3.image(cv2.convertScaleAbs(frame, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
+                cap.release()
                 
                 # 2. Jalankan Proses Pipeline
                 prep_path = prepare_video_pipeline(tfile.name, temp_dir)
@@ -115,11 +130,12 @@ with tab2:
                 
                 # 3. Jalankan Tracking
                 df = tracking_pipeline(prep_path, os.path.join(temp_dir, "tracks.csv"))
+                
                 if 'frame' not in df.columns:
                     df = df.reset_index()
                 else:
                     df = df.reset_index(drop=True)
-            
+                
                 st.session_state.tracks_df = df
                 status.update(label="Preprocessing & Tracking Selesai!", state="complete")
 
@@ -127,6 +143,7 @@ with tab2:
         if st.session_state.tracks_df is not None:
             # Munculkan kembali visualisasi Tahap A dari session state
             if st.session_state.sample_frame is not None:
+                st.divider()
                 st.write("### Visualisasi Tahap A (Preprocessing)")
                 f1, f2, f3 = st.columns(3)
                 img = st.session_state.sample_frame
