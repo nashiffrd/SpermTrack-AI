@@ -109,7 +109,11 @@ with tab2:
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
             tfile.write(video_file.read())
             
-            with st.status("Preprocessing and Tracking are Running", expanded=True) as status:
+            # --- PERUBAHAN TAMPILAN PROSES ---
+            progress_placeholder = st.empty() # Wadah kosong untuk status running
+            
+            with progress_placeholder.container():
+                st.info("⏳ Sedang memproses: Preprocessing and Tracking are Running...")
                 temp_dir = tempfile.mkdtemp()
                 
                 # --- VISUALISASI TAHAP A (MENGGUNAKAN TFILE) ---
