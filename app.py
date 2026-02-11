@@ -45,7 +45,7 @@ if 'morphology_results' not in st.session_state: st.session_state.morphology_res
 # 3. TAB NAVIGATION
 # ==========================================
 st.title("🧬 SpermTrack AI")
-st.subheader("Sistem Analisis Semen Otomatis Berbasis Deep Learning Untuk Deteksi Abnormalitas Motility dan Morfologi Spermatozoa")
+st.subheader("Sistem Analisis Semen Otomatis Untuk Deteksi Abnormalitas Motility dan Morfologi Spermatozoa")
 
 tab1, tab2, tab3, tab4 = st.tabs([
     "🏠 Halaman Awal", 
