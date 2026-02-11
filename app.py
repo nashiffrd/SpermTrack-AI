@@ -88,7 +88,7 @@ with tab1:
 # ------------------------------------------
 # TAB 2: DATA LOADER & PROCESSING
 # ------------------------------------------
-with tabs2:
+with tab2:
     st.header("Upload & Digital Processing")
     video_file = st.file_uploader("Pilih Video Sperma", type=['mp4', 'avi'])
 
