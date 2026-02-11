@@ -128,14 +128,14 @@ with tab2:
         if st.session_state.prepared_video is not None:
             st.write("### Visualisasi Tahap A (Preprocessing)")
             # Visualisasi (Asli > Gray > Contrast)
-                cap = cv2.VideoCapture(tfile.name)
-                ret, frame = cap.read()
-                if ret:
-                    c1, c2, c3 = st.columns(3)
-                    c1.image(frame, caption="Frame Asli", use_container_width=True)
-                    c2.image(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
-                    c3.image(cv2.convertScaleAbs(frame, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
-                cap.release()
+            cap = cv2.VideoCapture(tfile.name)
+            ret, frame = cap.read()
+            if ret:
+                c1, c2, c3 = st.columns(3)
+                c1.image(frame, caption="Frame Asli", use_container_width=True)
+                c2.image(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
+                c3.image(cv2.convertScaleAbs(frame, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
+            cap.release()
 
         # --- TAMPILAN TAHAP B (Data Tracking) ---
         if st.session_state.tracks_df is not None:
