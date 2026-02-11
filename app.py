@@ -40,7 +40,8 @@ if 'tracks_df' not in st.session_state: st.session_state.tracks_df = None
 if 'prepared_video' not in st.session_state: st.session_state.prepared_video = None
 if 'motility_results' not in st.session_state: st.session_state.motility_results = None
 if 'morphology_results' not in st.session_state: st.session_state.morphology_results = None
-
+if 'current_step' not in st.session_state:
+    st.session_state.current_step = "🏠 Halaman Awal"
 # ==========================================
 # 3. TAB NAVIGATION
 # ==========================================
@@ -70,6 +71,8 @@ with tab1:
     4. Lihat kesimpulan akhir pada tab **Summary Dashboard**.
     """)
     st.info("Gunakan navigasi tab di atas untuk memulai proses analisis.")
+    if st.button("Lakukan Analisis Sekarang 🚀", use_container_width=True):
+        st.session_state.current_step = "⚙️ Data Loader & Processing"
 
 # ------------------------------------------
 # TAB 2: DATA LOADER & PROCESSING
