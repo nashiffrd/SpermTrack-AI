@@ -42,6 +42,10 @@ if 'motility_results' not in st.session_state: st.session_state.motility_results
 if 'morphology_results' not in st.session_state: st.session_state.morphology_results = None
 if 'current_step' not in st.session_state:
     st.session_state.current_step = "🏠 Halaman Awal"
+
+def pindah_halaman(nama_halaman):st.session_state.current_step = nama_halaman
+
+
 # ==========================================
 # 3. TAB NAVIGATION
 # ==========================================
