@@ -109,18 +109,10 @@ with tab2:
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
             tfile.write(video_file.read())
             
-            # --- PERUBAHAN TAMPILAN PROSES ---
-            progress_placeholder = st.empty() # Wadah kosong untuk status running
-            
-            with progress_placeholder.container():
-                st.info("⏳ Sedang memproses: Preprocessing and Tracking are Running...")
+            # Tampilan saat sedang berjalan
+            with progress_container.container():
+                st.info("⏳ Menjalankan Preprocessing & Tracking...")
                 temp_dir = tempfile.mkdtemp()
-                
-                # --- VISUALISASI TAHAP A (MENGGUNAKAN TFILE) ---
-                cap = cv2.VideoCapture(tfile.name)
-                ret, frame = cap.read()
-                if ret:
-                    st.session_state.sample_frame = frame
                 
                 # 2. Jalankan Proses Pipeline
                 prep_path = prepare_video_pipeline(tfile.name, temp_dir)
