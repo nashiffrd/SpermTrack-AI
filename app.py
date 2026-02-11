@@ -91,13 +91,14 @@ with tab1:
 with tab2:
     st.header("Upload & Digital Processing")
     video_file = st.file_uploader("Pilih Video Sperma", type=['mp4', 'avi'])
-    
+
     if video_file:
-        tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
-        tfile.write(video_file.read())
-        
-        if st.button("Jalankan Preprocessing & Tracking 🚀"):
-            with st.status("Sedang memproses...", expanded=True) as status:
+        if st.session_state.tracks_df is None:
+            tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+            tfile.write(video_file.read())
+            
+            # PROSES OTOMATIS BERJALAN DI SINI
+            with st.status("Preprocessing and Tracking are Running", expanded=True) as status:
                 temp_dir = tempfile.mkdtemp()
                 
                 # A. Preprocessing
