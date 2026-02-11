@@ -69,13 +69,13 @@ with tab1:
     3. Jalankan analisis motilitas dan morfologi pada tab **Analysis Process**.
     4. Lihat kesimpulan akhir pada tab **Summary Dashboard**.
     """)
-    st.info("Gunakan navigasi tab di atas untuk memulai proses analisis.")
     st.markdown("""
     <div style="
         background-color: #e8f4f9; 
         padding: 15px; 
         border-radius: 10px; 
-        border-left: 5px solid #007bff;
+        border-left: 3px solid #007bff;
+        border-right: 3px solid #007bff;
         text-align: center;
         color: #0c5460;
         font-family: sans-serif;
