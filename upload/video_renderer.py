@@ -15,7 +15,7 @@ def create_motility_video(video_path, tracks_df, motility_results):
     
     # Setup Video Writer
     temp_out = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'H264')
     out = cv2.VideoWriter(temp_out.name, fourcc, fps, (width, height))
     
     # Warna: BGR (OpenCV menggunakan BGR bukan RGB)
