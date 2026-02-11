@@ -12,7 +12,7 @@ from models.morphology_analyzer import run_morphology_analysis
 # ==========================================
 # 1. CONFIG & STYLE
 # ==========================================
-st.set_page_config(page_title="Sperm Analysis AI", layout="wide", page_icon="🧬")
+st.set_page_config(page_title="SpermTrack AI", layout="wide", page_icon="🧬")
 
 st.markdown("""
     <style>
@@ -44,8 +44,8 @@ if 'morphology_results' not in st.session_state: st.session_state.morphology_res
 # ==========================================
 # 3. TAB NAVIGATION
 # ==========================================
-st.title("DETEKSI ABNORMALITAS MOTILITY DAN MORFOLOGI SPERMATOZOA")
-st.subheader("Sistem Analisis Semen Otomatis Berbasis Deep Learning")
+st.title("🧬 SpermTrack AI")
+st.subheader("Sistem Analisis Semen Otomatis Berbasis Deep Learning Untuk Deteksi Abnormalitas Motility dan Morfologi Spermatozoa")
 
 tab1, tab2, tab3, tab4 = st.tabs([
     "🏠 Halaman Awal", 
