@@ -59,12 +59,12 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # ------------------------------------------
 with tab1:
     st.write("""
-    Aplikasi ini dirancang untuk mempermudah analisis kualitas spermatozoa melalui video mikroskopis.
+    Aplikasi ini dirancang untuk mempermudah analisis kualitas spermatozoa melalui video mikroskopis berdasarkan standart WHO.
     Sistem bekerja secara otomatis mulai dari pembersihan video, pelacakan partikel (tracking), 
     hingga klasifikasi menggunakan model AI (3D-CNN dan EfficientNetV2S).
 
     **Cara Penggunaan:**
-    1. Upload video pada tab **Data Loader**.
+    1. Upload video pada tab **Data Loader & Processing**.
     2. Lakukan preprocessing dan tracking.
     3. Jalankan analisis motilitas dan morfologi pada tab **Analysis Process**.
     4. Lihat kesimpulan akhir pada tab **Summary Dashboard**.
@@ -81,7 +81,7 @@ with tab1:
         font-family: sans-serif;
         margin-bottom: 20px;
     ">
-        Gunakan navigasi tab di atas untuk memulai proses analisis.
+        **Gunakan navigasi tab di atas untuk memulai proses analisis.**
     </div>
     """, unsafe_allow_html=True)
 
