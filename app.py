@@ -150,27 +150,74 @@ with tab2:
 # ------------------------------------------
 # TAB 3: ANALYSIS PROCESS
 # ------------------------------------------
+# ------------------------------------------
+# TAB 3: ANALYSIS PROCESS (REVISED WITH SUMMARY TABLE)
+# ------------------------------------------
 with tab3:
     st.header("Kalkulasi Motilitas & Morfologi")
+    
     if st.session_state.tracks_df is None:
-        st.warning("Silakan selesaikan proses di Tab 2 terlebih dahulu.")
+        st.warning("Silakan selesaikan proses di Tab 2 (Upload & Tracking) terlebih dahulu.")
     else:
-        col_m1, col_m2 = st.columns(2)
-        with col_m1:
-            if st.button("🚀 Jalankan Analisis Motilitas"):
-                with st.spinner("Menghitung pergerakan..."):
-                    st.session_state.motility_results = run_motility_analysis(
-                        st.session_state.prepared_video, st.session_state.tracks_df, "model_motility.h5"
-                    )
-                st.success("Motilitas Selesai!")
-        with col_m2:
-            if st.button("🔬 Jalankan Analisis Morfologi"):
-                with st.spinner("Menganalisis bentuk..."):
-                    st.session_state.morphology_results = run_morphology_analysis(
-                        st.session_state.prepared_video, st.session_state.tracks_df
-                    )
-                st.success("Morfologi Selesai!")
+        # 1. SATU TOMBOL UNTUK DUA MODEL
+        if st.button("🚀 Jalankan Analisis Motility dan Morfologi"):
+            with st.spinner("AI sedang menganalisis pergerakan dan bentuk spermatozoa..."):
+                # A. Menjalankan Analisis Motilitas
+                st.session_state.motility_results = run_motility_analysis(
+                    st.session_state.prepared_video, 
+                    st.session_state.tracks_df, 
+                    "model_motility.h5"
+                )
+                
+                # B. Menjalankan Analisis Morfologi
+                st.session_state.morphology_results = run_morphology_analysis(
+                    st.session_state.prepared_video, 
+                    st.session_state.tracks_df
+                )
+            st.success("Analisis Motilitas & Morfologi Selesai!")
 
+        # 2. TAMPILKAN HASIL JIKA SUDAH ADA
+        if st.session_state.motility_results is not None and st.session_state.morphology_results is not None:
+            st.divider()
+            st.subheader("📊 Exploratory Data Analysis (EDA)")
+            
+            eda_col1, eda_col2 = st.columns(2)
+            with eda_col1:
+                st.write("**Distribusi Motilitas**")
+                mot_counts = st.session_state.motility_results['motility_label'].value_counts()
+                st.bar_chart(mot_counts, color="#007bff")
+
+            with eda_col2:
+                st.write("**Distribusi Morfologi**")
+                morf_counts = st.session_state.morphology_results['morphology_label'].value_counts()
+                st.bar_chart(morf_counts, color="#ff4b4b")
+
+            # --- TAMBAHAN: TABEL SUMMARY KLASIFIKASI ---
+            st.divider()
+            st.subheader("📋 Tabel Summary Klasifikasi")
+            
+            # Menggabungkan hasil motility dan morphology berdasarkan ID particle
+            # Kita ambil kolom x, y, frame dari tracks_df awal melalui join
+            df_mot = st.session_state.motility_results[['particle', 'motility_label']]
+            df_morf = st.session_state.morphology_results[['particle', 'morphology_label']]
+            
+            # Gabungkan kedua hasil klasifikasi
+            summary_df = pd.merge(df_mot, df_morf, on='particle', how='inner')
+            
+            # Gabungkan dengan data koordinat (x, y, frame) dari tracks_df asli
+            # Kita ambil baris pertama dari setiap particle untuk koordinat representatif
+            coords = st.session_state.tracks_df.groupby('particle').first().reset_index()[['particle', 'x', 'y', 'frame']]
+            
+            final_summary = pd.merge(coords, summary_df, on='particle', how='inner')
+            
+            # Menata ulang urutan kolom sesuai instruksi
+            final_summary = final_summary[['x', 'y', 'frame', 'particle', 'motility_label', 'morphology_label']]
+            
+            # Rename kolom agar lebih rapi di tabel
+            final_summary.columns = ['X', 'Y', 'Frame', 'ID Particle', 'Klasifikasi Motility', 'Klasifikasi Morfologi']
+            
+            st.dataframe(final_summary, use_container_width=True)
+            
 # ------------------------------------------
 # TAB 4: SUMMARY DASHBOARD
 # ------------------------------------------
