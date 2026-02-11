@@ -44,6 +44,9 @@ if 'morphology_results' not in st.session_state: st.session_state.morphology_res
 # ==========================================
 # 3. TAB NAVIGATION
 # ==========================================
+st.title("DETEKSI ABNORMALITAS MOTILITY DAN MORFOLOGI SPERMATOZOA")
+st.subheader("Sistem Analisis Semen Otomatis Berbasis Deep Learning")
+
 tab1, tab2, tab3, tab4 = st.tabs([
     "🏠 Halaman Awal", 
     "⚙️ Data Loader & Processing", 
@@ -55,8 +58,6 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # TAB 1: HALAMAN AWAL
 # ------------------------------------------
 with tab1:
-    st.title("DETEKSI ABNORMALITAS MOTILITY DAN MORFOLOGI SPERMATOZOA")
-    st.subheader("Sistem Analisis Semen Otomatis Berbasis Deep Learning")
     st.write("""
     Aplikasi ini dirancang untuk mempermudah analisis kualitas spermatozoa melalui video mikroskopis.
     Sistem bekerja secara otomatis mulai dari pembersihan video, pelacakan partikel (tracking), 
