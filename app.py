@@ -81,7 +81,7 @@ with tab1:
         font-family: sans-serif;
         margin-bottom: 20px;
     ">
-        **Gunakan navigasi tab di atas untuk memulai proses analisis.**
+        Gunakan navigasi tab di atas untuk memulai proses analisis.
     </div>
     """, unsafe_allow_html=True)
 
