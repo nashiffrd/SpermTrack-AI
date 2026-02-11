@@ -263,8 +263,8 @@ with tab4:
                 st.write("**Morphology Counts**")
                 mo_res = st.session_state.morphology_results
                 mo_counts = mo_res['morphology_label'].value_counts()
-                st.write(f"✅ **Normal:** {mo_counts.get('Normal', 0)}")
-                st.write(f"❌ **Abnormal:** {mo_counts.get('Abnormal', 0)}")
+                st.write(f"**Normal:** {mo_counts.get('Normal', 0)}")
+                st.write(f"**Abnormal:** {mo_counts.get('Abnormal', 0)}")
 
         # --- 3. VISUALIZATION & SAMPLES ---
         r2c1, r2c2 = st.columns([2, 1])
@@ -289,22 +289,9 @@ with tab4:
 
         with r2c2:
             with st.container(border=True):
-                st.write("**Sampel Klasifikasi**")
-                if mo_res is not None and not mo_res.empty:
-                    tabs_morf = st.tabs(["Abnormal", "Normal"])
-                    
-                    with tabs_morf[0]: # Tab Abnormal
-                        abnorm_sample = mo_res[mo_res['morphology_label'] == 'Abnormal']
-                        if not norm_sample.empty:
-                            st.image(norm_sample.iloc[0]['image_display'], caption="Contoh Sel Abnormal", use_container_width=True)
-                        else:
-                            st.write("Tidak ditemukan sampel Abnormal.")
-                            
-                    with tabs_morf[1]: # Tab Normal
-                        norm_sample = mo_res[mo_res['morphology_label'] == 'Normal']
-                        if not abnorm_sample.empty:
-                            st.image(abnorm_sample.iloc[0]['image_display'], caption="Contoh Sel Normal", use_container_width=True)
-                        else:
-                            st.write("Tidak ditemukan sampel Normal.")
-                else:
-                    st.write("Data morfologi belum tersedia.")
+                st.write("**Sampel Normal Morfologi**")
+                #norm_img = mo_res[mo_res['morphology_label'] == 'Normal']
+                #if not norm_img.empty:
+                    #st.image(norm_img.iloc[0]['image_display'], use_container_width=True)
+                #else:
+                    #st.write("Tidak ada sampel normal.")
