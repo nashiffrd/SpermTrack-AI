@@ -93,59 +93,61 @@ with tab2:
     video_file = st.file_uploader("Pilih Video Sperma", type=['mp4', 'avi'])
 
     if video_file:
-        # Buat penanda unik berdasarkan nama file agar sistem tahu jika video diganti
-        video_id = f"{video_file.name}_{video_file.size}"
-        
-        # Jika video baru diunggah (berbeda dari yang diproses sebelumnya)
-        if st.session_state.get('last_processed_video') != video_id:
-            st.session_state.tracks_df = None  # Reset data lama
-            st.session_state.prepared_video = None
-
         if st.session_state.tracks_df is None:
+            # 1. Simpan video upload ke file temporary
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
             tfile.write(video_file.read())
             
             with st.status("Preprocessing and Tracking are Running", expanded=True) as status:
                 temp_dir = tempfile.mkdtemp()
                 
-                # A. Preprocessing
+                # --- VISUALISASI TAHAP A (MENGGUNAKAN TFILE) ---
+                cap = cv2.VideoCapture(tfile.name)
+                ret, frame = cap.read()
+                if ret:
+                    # Simpan frame ke session_state agar tidak hilang setelah rerun
+                    st.session_state.sample_frame = frame
+                    
+                    c1, c2, c3 = st.columns(3)
+                    c1.image(frame, caption="Frame Asli (tfile)", use_container_width=True)
+                    c2.image(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
+                    c3.image(cv2.convertScaleAbs(frame, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
+                cap.release()
+                
+                # 2. Jalankan Proses Pipeline
                 prep_path = prepare_video_pipeline(tfile.name, temp_dir)
                 st.session_state.prepared_video = prep_path
                 
-                # B. Tracking
+                # 3. Jalankan Tracking
                 df = tracking_pipeline(prep_path, os.path.join(temp_dir, "tracks.csv"))
                 
+                # Fix Value Error (Duplikasi Kolom)
                 if 'frame' not in df.columns:
                     df = df.reset_index()
                 else:
                     df = df.reset_index(drop=True)
                 
                 st.session_state.tracks_df = df
-                st.session_state.last_processed_video = video_id # Tandai video ini sudah diproses
                 status.update(label="Preprocessing & Tracking Selesai!", state="complete")
 
-        # --- VISUALISASI TAHAP A (Diletakkan di luar IF agar selalu muncul) ---
-        if st.session_state.prepared_video is not None:
-            st.write("### Visualisasi Tahap A (Preprocessing)")
-            # Visualisasi (Asli > Gray > Contrast)
-            cap = cv2.VideoCapture(tfile.name)
-            ret, frame = cap.read()
-            if ret:
-                c1, c2, c3 = st.columns(3)
-                c1.image(frame, caption="Frame Asli", use_container_width=True)
-                c2.image(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
-                c3.image(cv2.convertScaleAbs(frame, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
-            cap.release()
-
-        # --- TAMPILAN TAHAP B (Data Tracking) ---
+        # --- TAMPILAN SETELAH PROSES SELESAI ---
         if st.session_state.tracks_df is not None:
+            # Tampilkan kembali visualisasi Tahap A yang tadi disimpan
+            if 'sample_frame' in st.session_state:
+                st.write("### Visualisasi Tahap A (Frame Asli)")
+                sc1, sc2, sc3 = st.columns(3)
+                img = st.session_state.sample_frame
+                sc1.image(img, caption="Frame Asli", use_container_width=True)
+                sc2.image(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
+                sc3.image(cv2.convertScaleAbs(img, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
+
             st.divider()
             st.write("### Visualisasi Tahap B (Tracking Data)")
             m1, m2 = st.columns(2)
             m1.markdown(f"<div class='metric-container'><h4>Total Partikel</h4><h2>{st.session_state.tracks_df['particle'].nunique()}</h2></div>", unsafe_allow_html=True)
             m2.markdown(f"<div class='metric-container'><h4>Total Lintasan</h4><h2>{len(st.session_state.tracks_df)}</h2></div>", unsafe_allow_html=True)
             st.dataframe(st.session_state.tracks_df.head(50), use_container_width=True)
-            
+
 # ------------------------------------------
 # TAB 3: ANALYSIS PROCESS
 # ------------------------------------------
