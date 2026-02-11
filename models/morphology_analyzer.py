@@ -104,7 +104,7 @@ def run_morphology_analysis(video_path, tracks_df):
         img_input = np.expand_dims(processed_img.astype(np.float32) / 255.0, axis=0)
         prob = model.predict(img_input)[0][0]
         
-        label = "Normal" if prob < 0.5 else "Abnormal"
+        label = "Abnormal" if prob < 0.5 else "Normal"
         
         results.append({
             'particle': p_id,
