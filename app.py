@@ -44,11 +44,7 @@ if 'morphology_results' not in st.session_state: st.session_state.morphology_res
 # ==========================================
 # 3. TAB NAVIGATION
 # ==========================================
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🏠 Halaman Awal", 
-    "⚙️ Data Loader & Processing", 
-    "🔬 Analysis Process", 
-    "📊 Summary Dashboard"])
+tab1, tab2, tab3, tab4 = st.tabs(["🏠 Halaman Awal","⚙️ Data Loader & Processing","🔬 Analysis Process","📊 Summary Dashboard"])
 
 # ------------------------------------------
 # TAB 1: HALAMAN AWAL
