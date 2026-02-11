@@ -288,10 +288,29 @@ with tab4:
                     st.info("Data visualisasi lintasan tidak ditemukan.")
 
         with r2c2:
-            with st.container(border=True):
-                st.write("**Sampel Normal Morfologi**")
-                #norm_img = mo_res[mo_res['morphology_label'] == 'Normal']
-                #if not norm_img.empty:
-                    #st.image(norm_img.iloc[0]['image_display'], use_container_width=True)
-                #else:
-                    #st.write("Tidak ada sampel normal.")
+            with st.container(border=True):
+                st.write("**Sampel Morfologi Terdeteksi**")
+        
+                # Mengambil hasil morfologi
+                mo_res = st.session_state.morphology_results
+        
+            if mo_res is not None and not mo_res.empty:
+                # Menampilkan dua sampel: Satu Normal dan Satu Abnormal untuk perbandingan
+                tabs_morf = st.tabs(["Abnormal", "Normal"])
+            
+                with tabs_morf[0]:
+                    norm_sample = mo_res[mo_res['morphology_label'] == 'Normal']
+                    if not norm_sample.empty:
+                        # Jika fungsi morfologi menyimpan image_display (crop sperma)
+                    s    t.image(norm_sample.iloc[0]['image_display'], caption="Contoh Normal", use_container_width=True)
+                    else:
+                        st.write("Sampel normal tidak ditemukan.")
+            
+                with tabs_morf[1]:
+                    abnorm_sample = mo_res[mo_res['morphology_label'] == 'Abnormal']
+                    if not abnorm_sample.empty:
+                        st.image(abnorm_sample.iloc[0]['image_display'], caption="Contoh Abnormal", use_container_width=True)
+                    else:
+                        st.write("Sampel abnormal tidak ditemukan.")
+            else:
+                st.write("Data morfologi belum diproses.")
