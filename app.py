@@ -267,7 +267,7 @@ with tab4:
                 st.write(f"**Abnormal:** {mo_counts.get('Abnormal', 0)}")
 
         # --- 3. VISUALIZATION & SAMPLES ---
-        r2c1, r2c2 = st.columns([2, 1])
+r2c1, r2c2 = st.columns([2, 1])
 with r2c1:
     with st.container(border=True):
         st.write("**Visualisasi Motilitas Sperma (PR: Hijau, NP: Kuning, IM: Merah)**")
