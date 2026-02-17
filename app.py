@@ -227,7 +227,7 @@ with tab4:
     if st.session_state.motility_results is None or st.session_state.morphology_results is None:
         st.info("Hasil analisis akan tampil setelah Tab 3 selesai diproses.")
     else:
-        # --- 1. MAIN RESULT CARD ---
+        # --- 1. MAIN RESULT CARD (Diagnosis Box) ---
         m_res = st.session_state.motility_results
         mo_res = st.session_state.morphology_results
 
@@ -246,28 +246,20 @@ with tab4:
         is_morphology_low = normal_mo_percent < 4
 
         if is_motility_low and is_morphology_low:
-            status_f = "Asthenoteratozoospermia"
-            deskripsi = "Kombinasi Motilitas Rendah & Morfologi Normal Rendah"
-            bg_color = "#721c24"  # Merah Gelap
+            status_f, deskripsi, bg_color = "Asthenoteratozoospermia", "Kombinasi Motilitas Rendah & Morfologi Normal Rendah", "#721c24"
         elif is_motility_low:
-            status_f = "Asthenozoospermia"
-            deskripsi = "Kelainan pada Motilitas (Gerak Sperma Rendah)"
-            bg_color = "#dc3545"  # Merah
+            status_f, deskripsi, bg_color = "Asthenozoospermia", "Kelainan pada Motilitas (Gerak Sperma Rendah)", "#dc3545"
         elif is_morphology_low:
-            status_f = "Teratozoospermia"
-            deskripsi = "Kelainan pada Morfologi (Bentuk Normal Rendah)"
-            bg_color = "#fd7e14"  # Oranye
+            status_f, deskripsi, bg_color = "Teratozoospermia", "Kelainan pada Morfologi (Bentuk Normal Rendah)", "#fd7e14"
         else:
-            status_f = "Normozoospermia"
-            deskripsi = "Sampel dalam Batas Normal (Sesuai Standar WHO)"
-            bg_color = "#28a745"  # Hijau
+            status_f, deskripsi, bg_color = "Normozoospermia", "Sampel dalam Batas Normal (Sesuai Standar WHO)", "#28a745"
 
-        # TAMPILAN CARD
+        # TAMPILAN CARD DIAGNOSIS (Dipersingkat Paddingnya agar hemat ruang)
         st.markdown(f"""
-            <div style='background-color: {bg_color}; padding: 25px; border-radius: 15px; text-align: center; color: white; border: 2px solid rgba(255,255,255,0.2)'>
-                <p style='margin:0; font-size: 1.2rem; opacity: 0.9;'>Diagnosis Berdasarkan Parameter WHO:</p>
-                <h1 style='margin:10px 0; font-size: 2.8rem; letter-spacing: 1px;'>{status_f}</h1>
-                <hr style='border: 0.5px solid rgba(255,255,255,0.3); margin: 15px 0;'>
+            <div style='background-color: {bg_color}; padding: 20px; border-radius: 15px; text-align: center; color: white; border: 2px solid rgba(255,255,255,0.2); margin-bottom: 0px;'>
+                <p style='margin:0; font-size: 1.1rem; opacity: 0.9;'>Diagnosis Berdasarkan Parameter WHO:</p>
+                <h1 style='margin:5px 0; font-size: 2.5rem; letter-spacing: 1px;'>{status_f}</h1>
+                <hr style='border: 0.5px solid rgba(255,255,255,0.3); margin: 10px 0;'>
                 <div style='display: flex; justify-content: space-around;'>
                     <div>
                         <p style='margin:0; font-weight: bold;'>PR Motility</p>
@@ -280,81 +272,34 @@ with tab4:
                         <small>(Threshold: 4%)</small>
                     </div>
                 </div>
-                <p style='margin-top:20px; font-style: italic; font-size: 0.9rem;'>{deskripsi}</p>
+                <p style='margin-top:10px; font-style: italic; font-size: 0.9rem;'>{deskripsi}</p>
             </div>
         """, unsafe_allow_html=True)
 
-        st.write("")
-
-        # --- 2. MOTILITY & MORPHOLOGY METRICS ---
-        r1c1, r1c2 = st.columns([2, 1])
-
-        with r1c1:
-            with st.container(border=True):
-                st.write("**Motility Counts**")
-                counts = m_res['motility_label'].value_counts()
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Progressive (PR)", counts.get('PR', 0))
-                c2.metric("Non-Progressive (NP)", counts.get('NP', 0))
-                c3.metric("Immotile (IM)", counts.get('IM', 0))
-
-        with r1c2:
-            with st.container(border=True):
-                st.write("**Morphology Counts**")
-                mo_res = st.session_state.morphology_results
-                mo_counts = mo_res['morphology_label'].value_counts()
-                st.write(f"**Normal:** {mo_counts.get('Normal', 0)}")
-                st.write(f"**Abnormal:** {mo_counts.get('Abnormal', 0)}")
-
-        # --- 3. VISUALIZATION & SAMPLES ---
-        r2c1, r2c2 = st.columns([2, 1])
-
-        with r2c1:
-            with st.container(border=True):
-                st.write("**Visualisasi Motilitas Sperma (PR: Hijau, NP: Kuning, IM: Merah)**")
-
-                if 'vis_video_path' in st.session_state and st.session_state.vis_video_path:
-                    # Buka file secara manual dan baca isinya sebagai bytes
-                    with open(st.session_state.vis_video_path, 'rb') as video_file:
-                        video_bytes = video_file.read()
-
-                    # Masukkan objek bytes ke dalam st.video
-                    st.video(video_bytes)
-                else:
-                    st.info("Video sedang diproses atau belum tersedia.")
-
-        with r2c2:
-            with st.container(border=True):
-                st.write("**Sampel Morfologi Terdeteksi**")
-
-                # Mengambil hasil morfologi
-                mo_res = st.session_state.morphology_results
-
-                if mo_res is not None and not mo_res.empty:
-                    # Menampilkan dua sampel: Satu Normal dan Satu Abnormal untuk perbandingan
-                    tabs_morf = st.tabs(["Normal", "Abnormal"])
-
-                    with tabs_morf[0]:
-                        norm_sample = mo_res[mo_res['morphology_label'] == 'Normal']
-                        if not norm_sample.empty:
-                            # Jika fungsi morfologi menyimpan image_display (crop sperma)
-                            st.image(
-                                norm_sample.iloc[0]['image_display'],
-                                caption="Contoh Normal",
-                                use_container_width=True
-                            )
-                        else:
-                            st.write("Sampel normal tidak ditemukan.")
-
-                    with tabs_morf[1]:
-                        abnorm_sample = mo_res[mo_res['morphology_label'] == 'Abnormal']
-                        if not abnorm_sample.empty:
-                            st.image(
-                                abnorm_sample.iloc[0]['image_display'],
-                                caption="Contoh Abnormal",
-                                use_container_width=True
-                            )
-                        else:
-                            st.write("Sampel abnormal tidak ditemukan.")
-                else:
-                    st.write("Data morfologi belum diproses.")
+        # --- 2. INTEGRATED METRICS (Satu Baris Lurus & Rata Tengah) ---
+        # Menghilangkan st.write("") untuk merapatkan jarak
+        with st.container(border=True):
+            # Menampilkan Judul Gabungan agar Rapi
+            st.markdown("<h4 style='text-align: center; margin-bottom: 15px;'>Detail Perhitungan Partikel (Motilitas & Morfologi)</h4>", unsafe_allow_html=True)
+            
+            # Membuat 5 kolom untuk PR, NP, IM, Normal, Abnormal
+            c1, c2, c3, c4, c5 = st.columns(5)
+            
+            m_counts = m_res['motility_label'].value_counts()
+            mo_counts = mo_res['morphology_label'].value_counts()
+            
+            with c1:
+                st.markdown("<div style='text-align: center;'><b>Motility: PR</b></div>", unsafe_allow_html=True)
+                st.metric(label="", value=m_counts.get('PR', 0), label_visibility="collapsed")
+            with c2:
+                st.markdown("<div style='text-align: center;'><b>Motility: NP</b></div>", unsafe_allow_html=True)
+                st.metric(label="", value=m_counts.get('NP', 0), label_visibility="collapsed")
+            with c3:
+                st.markdown("<div style='text-align: center;'><b>Motility: IM</b></div>", unsafe_allow_html=True)
+                st.metric(label="", value=m_counts.get('IM', 0), label_visibility="collapsed")
+            with c4:
+                st.markdown("<div style='text-align: center;'><b>Morphology: Normal</b></div>", unsafe_allow_html=True)
+                st.metric(label="", value=mo_counts.get('Normal', 0), label_visibility="collapsed")
+            with c5:
+                st.markdown("<div style='text-align: center;'><b>Morphology: Abnormal</b></div>", unsafe_allow_html=True)
+                st.metric(label="", value=mo_counts.get('Abnormal', 0), label_visibility="collapsed")
