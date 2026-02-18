@@ -6,10 +6,9 @@ import tempfile
 import numpy as np
 from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
-from tracking.visualization import draw_tracks
 from models.motility_analyzer import run_motility_analysis
 from models.morphology_analyzer import run_morphology_analysis
-from upload.video_renderer import create_motility_video
+
 # ==========================================
 # 1. CONFIG & STYLE
 # ==========================================
@@ -94,35 +93,27 @@ with tab2:
     video_file = st.file_uploader("Pilih Video Sperma", type=['mp4', 'avi'], key="sperm_video_uploader")
 
     if video_file:
-        # Membuat ID unik untuk video (nama + ukuran file)
         current_video_id = f"{video_file.name}_{video_file.size}"
         
-        # Jika video yang diupload berbeda dengan yang terakhir diproses, reset session state
         if st.session_state.get('last_video_id') != current_video_id:
             st.session_state.tracks_df = None
             st.session_state.sample_frame = None
             st.session_state.last_video_id = current_video_id
-        # ------------------------------------
 
         if st.session_state.tracks_df is None:
-            # 1. Simpan video upload ke file temporary
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
             tfile.write(video_file.read())
             
             with st.status("Preprocessing and Tracking are Running") as status:
                 temp_dir = tempfile.mkdtemp()
-                
-                # --- VISUALISASI TAHAP A (MENGGUNAKAN TFILE) ---
                 cap = cv2.VideoCapture(tfile.name)
                 ret, frame = cap.read()
                 if ret:
                     st.session_state.sample_frame = frame
                 
-                # 2. Jalankan Proses Pipeline
                 prep_path = prepare_video_pipeline(tfile.name, temp_dir)
                 st.session_state.prepared_video = prep_path
                 
-                # 3. Jalankan Tracking
                 df = tracking_pipeline(prep_path, os.path.join(temp_dir, "tracks.csv"))
                 if 'frame' not in df.columns:
                     df = df.reset_index()
@@ -131,9 +122,7 @@ with tab2:
                 st.session_state.tracks_df = df
                 status.update(label="Preprocessing & Tracking Selesai!", state="complete")
 
-        # --- TAMPILAN SETELAH SELESAI (Agar tetap muncul saat upload ulang atau pindah tab) ---
         if st.session_state.tracks_df is not None:
-            # Munculkan kembali visualisasi Tahap A dari session state
             if st.session_state.sample_frame is not None:
                 st.write("### Visualisasi Tahap A (Preprocessing)")
                 f1, f2, f3 = st.columns(3)
@@ -149,7 +138,7 @@ with tab2:
             st.dataframe(st.session_state.tracks_df.head(50), use_container_width=True)
 
 # ------------------------------------------
-# TAB 3: ANALYSIS PROCESS (REVISED WITH SUMMARY TABLE)
+# TAB 3: ANALYSIS PROCESS
 # ------------------------------------------
 with tab3:
     st.header("Kalkulasi Motilitas & Morfologi")
@@ -157,24 +146,20 @@ with tab3:
     if st.session_state.tracks_df is None:
         st.warning("Silakan selesaikan proses di Tab 2 (Upload & Tracking) terlebih dahulu.")
     else:
-        # 1. SATU TOMBOL UNTUK DUA MODEL
         if st.button("🚀 Jalankan Analisis Motility dan Morfologi"):
             with st.spinner("Analysis Process is Running"):
-                # A. Menjalankan Analisis Motilitas
                 st.session_state.motility_results = run_motility_analysis(
                     st.session_state.prepared_video, 
                     st.session_state.tracks_df, 
                     "model_motility.h5"
                 )
                 
-                # B. Menjalankan Analisis Morfologi
                 st.session_state.morphology_results = run_morphology_analysis(
                     st.session_state.prepared_video, 
                     st.session_state.tracks_df
                 )
             st.success("Analisis Motilitas & Morfologi Selesai!")
 
-        # 2. TAMPILKAN HASIL JIKA SUDAH ADA
         if st.session_state.motility_results is not None and st.session_state.morphology_results is not None:
             st.divider()
             st.subheader("📊 Exploratory Data Analysis (EDA)")
@@ -190,29 +175,20 @@ with tab3:
                 morf_counts = st.session_state.morphology_results['morphology_label'].value_counts()
                 st.bar_chart(morf_counts, color="#ff4b4b")
 
-            # --- TAMBAHAN: TABEL SUMMARY KLASIFIKASI ---
             st.divider()
             st.subheader("📋 Tabel Summary Klasifikasi")
             
-            # Menggabungkan hasil motility dan morphology berdasarkan ID particle
-            # Kita ambil kolom x, y, frame dari tracks_df awal melalui join
-            df_mot = st.session_state.motility_results[['particle', 'motility_label']]
-            df_morf = st.session_state.morphology_results[['particle', 'morphology_label']]
+            # Penggabungan data dengan menyertakan kolom confidence
+            df_mot = st.session_state.motility_results[['particle', 'motility_label', 'confidence']]
+            df_morf = st.session_state.morphology_results[['particle', 'morphology_label', 'confidence']]
             
-            # Gabungkan kedua hasil klasifikasi
-            summary_df = pd.merge(df_mot, df_morf, on='particle', how='inner')
-            
-            # Gabungkan dengan data koordinat (x, y, frame) dari tracks_df asli
-            # Kita ambil baris pertama dari setiap particle untuk koordinat representatif
+            summary_df = pd.merge(df_mot, df_morf, on='particle', how='inner', suffixes=('_mot', '_morf'))
             coords = st.session_state.tracks_df.groupby('particle').first().reset_index()[['particle', 'x', 'y', 'frame']]
-            
             final_summary = pd.merge(coords, summary_df, on='particle', how='inner')
             
-            # Menata ulang urutan kolom sesuai instruksi
-            final_summary = final_summary[['x', 'y', 'frame', 'particle', 'motility_label', 'morphology_label']]
-            
-            # Rename kolom agar lebih rapi di tabel
-            final_summary.columns = ['X', 'Y', 'Frame', 'ID Particle', 'Klasifikasi Motility', 'Klasifikasi Morfologi']
+            # Menampilkan tabel dengan kolom confidence agar terlihat progresnya
+            final_summary = final_summary[['x', 'y', 'frame', 'particle', 'motility_label', 'morphology_label', 'confidence_mot', 'confidence_morf']]
+            final_summary.columns = ['X', 'Y', 'Frame', 'ID Particle', 'Motility', 'Morphology', 'Conf Motility', 'Conf Morphology']
             
             st.dataframe(final_summary, use_container_width=True)
             
@@ -223,7 +199,6 @@ with tab4:
     if st.session_state.motility_results is None or st.session_state.morphology_results is None:
         st.info("Hasil analisis akan tampil setelah Tab 3 selesai diproses.")
     else:
-        # --- PRE-CALCULATION ---
         m_res = st.session_state.motility_results
         mo_res = st.session_state.morphology_results
         total_sperma = len(m_res)
@@ -234,7 +209,7 @@ with tab4:
         normal_mo_val = len(mo_res[mo_res['morphology_label'] == 'Normal'])
         normal_mo_percent = (normal_mo_val / len(mo_res)) * 100 if len(mo_res) > 0 else 0
 
-        # Logika Diagnosis & Warna
+        # Diagnosis Logic
         if pr_percent < 32 and normal_mo_percent < 4:
             status_f, deskripsi, bg_color = "Asthenoteratozoospermia", "Motilitas & Morfologi Normal Rendah", "#721c24"
         elif pr_percent < 32:
@@ -244,7 +219,6 @@ with tab4:
         else:
             status_f, deskripsi, bg_color = "Normozoospermia", "Sampel Normal (Sesuai Standar WHO)", "#28a745"
 
-        # --- TAMPILAN TERINTEGRASI ---
         # 1. Header Diagnosis
         st.markdown(f"""
             <div style='background-color: {bg_color}; padding: 25px; border-radius: 15px 15px 0 0; text-align: center; color: white; margin-bottom: 0px;'>
@@ -254,7 +228,7 @@ with tab4:
             </div>
         """, unsafe_allow_html=True)
 
-        # 2. Body Panel (Warna Soft Grey agar Estetik)
+        # 2. Body Panel
         st.markdown(f"""
             <div style='background-color: #f8f9fa; padding: 20px; border-radius: 0 0 15px 15px; border: 1px solid #e9ecef; border-top: none;'>
                 <div style='display: flex; justify-content: space-around; text-align: center;'>
@@ -281,12 +255,9 @@ with tab4:
             </div>
         """, unsafe_allow_html=True)
         
-        # --- 3. AI CONFIDENCE SCORE (Visualisasi) ---
-        # Mengambil rata-rata dari kolom confidence yang baru kita buat
+        # 3. AI CONFIDENCE SCORE
         conf_mot = m_res['confidence'].mean() * 100 if 'confidence' in m_res.columns else 0
         conf_mo = mo_res['confidence'].mean() * 100 if 'confidence' in mo_res.columns else 0
-        
-        # Rata-rata sistem
         sys_conf = (conf_mot + conf_mo) / 2
 
         st.markdown(f"""
@@ -304,16 +275,9 @@ with tab4:
             </div>
         """, unsafe_allow_html=True)
         
-        # --- 4. TOMBOL RESET (Sempurna untuk Semua Tab) ---
+        # 4. RESET BUTTON
         st.write("")
         if st.button("🔄 Reset Analisis & Mulai Baru", use_container_width=True):
-            # 1. List kunci session_state yang harus dibersihkan secara paksa
-            # Sesuaikan nama kunci ini dengan yang kamu pakai di Tab 2 (misal: 'uploaded_video')
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
-            
-            # 2. Opsional: Jika kamu menggunakan key pada st.file_uploader, 
-            # membersihkan session_state di atas sudah cukup.
-            
-            # 3. Paksa aplikasi untuk restart dari awal
             st.rerun()
