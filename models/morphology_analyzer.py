@@ -110,6 +110,7 @@ def run_morphology_analysis(video_path, tracks_df):
             'particle': p_id,
             'morphology_label': label,
             'morphology_prob': prob,
+            'confidence': prob if prob > 0.5 else (1 - prob),
             'image_display': processed_img 
         })
         
