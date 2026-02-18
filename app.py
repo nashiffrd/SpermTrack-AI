@@ -280,8 +280,31 @@ with tab4:
                 </div>
             </div>
         """, unsafe_allow_html=True)
+        
+        # --- 3. AI CONFIDENCE SCORE (Visualisasi) ---
+        # Mengambil rata-rata dari kolom confidence yang baru kita buat
+        conf_mot = m_res['confidence'].mean() * 100 if 'confidence' in m_res.columns else 0
+        conf_mo = mo_res['confidence'].mean() * 100 if 'confidence' in mo_res.columns else 0
+        
+        # Rata-rata sistem
+        sys_conf = (conf_mot + conf_mo) / 2
 
-        # --- 3. TOMBOL RESET (Sempurna untuk Semua Tab) ---
+        st.markdown(f"""
+            <div style='display: flex; flex-direction: column; align-items: center; margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 12px; border: 1px dashed #ced4da;'>
+                <div style='display: flex; align-items: center; gap: 15px;'>
+                    <span style='color: #495057; font-weight: bold; font-size: 0.9rem;'>🤖 AI Analysis Confidence:</span>
+                    <div style='width: 200px; background-color: #e9ecef; border-radius: 10px; height: 12px; overflow: hidden; border: 1px solid #dee2e6;'>
+                        <div style='width: {sys_conf}%; background-color: {bg_color}; height: 100%; transition: width 0.5s;'></div>
+                    </div>
+                    <span style='color: {bg_color}; font-weight: 800; font-size: 1rem;'>{sys_conf:.2f}%</span>
+                </div>
+                <p style='margin-top: 8px; color: #6c757d; font-size: 0.75rem; text-align: center;'>
+                    Skor ini menunjukkan tingkat kepastian model dalam mengklasifikasikan sel pada sampel ini.
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # --- 4. TOMBOL RESET (Sempurna untuk Semua Tab) ---
         st.write("")
         if st.button("🔄 Reset Analisis & Mulai Baru", use_container_width=True):
             # 1. List kunci session_state yang harus dibersihkan secara paksa
