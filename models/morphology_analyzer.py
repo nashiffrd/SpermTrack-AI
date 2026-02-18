@@ -105,12 +105,12 @@ def run_morphology_analysis(video_path, tracks_df):
         prob = model.predict(img_input)[0][0]
         
         label = "Abnormal" if prob < 0.5 else "Normal"
-        
+        conf_value = prob if prob > 0.5 else (1 - prob)
         results.append({
             'particle': p_id,
             'morphology_label': label,
             'morphology_prob': prob,
-            'confidence': prob if prob > 0.5 else (1 - prob),
+            'confidence': float(conf_value),
             'image_display': processed_img 
         })
         
